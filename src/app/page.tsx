@@ -2,19 +2,32 @@
 
 import { invoke } from "@tauri-apps/api/tauri"
 import { Calculator, FileQuestion, LineChart, Table } from "lucide-react";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { Output } from "./components/Output"
+
+interface ComputeReturn {
+  [key: string]: number;
+}
 
 export default function Home() {
-  const [altitude, setAltitude] = useState<number>(0);
-  // const [greeting, setGreeting] = useState<string>("");
+  const [altitude, setAltitude] = useState<string>("");
+  const [altitudeUnit, setAltitudeUnit] = useState<number>(1);
 
-  // useEffect(() => {
-  //   console.log("ola, mundo")
-  //   invoke<string>("greet", { name: "next"})
-  //     .then(res => setGreeting(res))
-  //     .catch(console.error);
-  // }, [])
+  const [atmosphere, setAtmosphere] = useState<ComputeReturn>({});
+  const [pressure, setPressure] = useState<number>(0);
 
+  useEffect(() => {
+    setPressure(atmosphere["pressure"]);
+  }, [atmosphere, pressure]);
+
+  const handleInput = async (e: FormEvent) => {
+    e.preventDefault()
+    await invoke<ComputeReturn>("compute", { altitude: parseFloat(altitude), altitudeUnit: altitudeUnit })
+      .then(res => {
+        return setAtmosphere(res)
+      })
+      .catch(console.error);
+  };
   return (
     <div className="flex h-screen flex-col">
       <div className="flex flex-1">
@@ -52,11 +65,11 @@ export default function Home() {
                 <label htmlFor="altitude" className="basis-1/2">Altitude</label>
                 <input
                   value={altitude}
-                  type="number" 
-                  id="altitude" 
+                  onChange={(e) => setAltitude(e.target.value)}
+                  id="altitude"
                   className="bg-zinc-800 p-2 rounded-md basis-1/4"
                   />
-                <select className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4">
+                <select className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4" value={altitudeUnit} onChange={(e) => setAltitudeUnit(parseFloat(e.target.value))}>
                   <option value="1">meters[m]</option>
                   <option value="1000">kilometers[km]</option>
                   <option value="0.3048">feet[ft]</option>
@@ -101,7 +114,10 @@ export default function Home() {
                 </select>
               </div>
               <div className="flex items-center justify-end gap-4 h-12">
-                <button className="px-4 py-1 bg-zinc-600 drop-shadow-md shadow-md rounded-md focus:outline">Compute</button>
+                <button 
+                  className="px-4 py-1 bg-zinc-600 drop-shadow-md shadow-md rounded-md focus:outline"
+                  onClick={handleInput}
+                >Compute</button>
                 <button className="px-4 py-1 bg-zinc-600 drop-shadow-md shadow-md rounded-md focus:outline">Clear</button>
               </div>
             </form>
@@ -109,34 +125,26 @@ export default function Home() {
           <p className="pt-4 pb-2">Output</p>
           <div className="w-auto p-6 rounded-md bg-slate-100 bg-opacity-20 drop-shadow-lg shadow-lg">
             <form className="flex flex-col gap-4 text-lg">
-              <div className="flex items-center gap-4 flex-1 ">
-                <label htmlFor="geoaltitude" className="basis-1/2">Geometric Altitude</label>
-                <input
-                  disabled
-                  type="number" 
-                  id="geoaltitude" 
-                  className="bg-zinc-800 p-2 rounded-md basis-1/4"
-                  />
-                <select className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4">
-                  <option value="1">meters[m]</option>
-                  <option value="1000">kilometers[km]</option>
-                  <option value="0.3048">feet[ft]</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-4 flex-1">
-                <label htmlFor="temperature" className="basis-1/2">Geopotential Altitude</label>
-                <input 
-                  disabled
-                  type="number" 
-                  id="temperature"
-                  className="bg-zinc-800 p-2 rounded-md basis-1/4" 
-                />
-                <select className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4">
-                  <option value="1">meters[m]</option>
-                  <option value="1000">kilometers[km]</option>
-                  <option value="0.3048">feet[ft]</option>
-                </select>
-              </div>
+              <Output
+                label="pressure"
+                value={atmosphere["pressure"]}
+              />
+              <Output
+                label="Speed of Sound"
+                value={atmosphere["speed_of_sound"]}
+              />
+              <Output
+                label="Density"
+                value={atmosphere["density"]}
+              />
+              <Output
+                label="Temperature"
+                value={atmosphere["temperature"]}
+              />
+              <Output
+                label="Viscosities"
+                value={atmosphere["viscosities"]}
+              />
             </form>
           </div>
         </main>
