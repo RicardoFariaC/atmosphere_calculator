@@ -102,6 +102,14 @@ fn compute(altitude: f32, velocity: f32) -> HashMap<String, f32>{
   // defining which altitude use
   let mut i = 0;
   if geopotential_altitude > 0.0 {
+    if geopotential_altitude > ALTITUDES[ALTITUDES.len()-1] as f32 {
+      let results = HashMap::from([
+        (String::from(""), 0.0)
+      ]);
+
+      return results;
+    }
+
     while geopotential_altitude > ALTITUDES[i+1] as f32 {
       i += 1;
       if i+1 >= ALTITUDES.len() {
