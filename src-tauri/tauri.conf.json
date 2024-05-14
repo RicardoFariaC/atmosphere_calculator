@@ -55,10 +55,10 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 600,
+        "height": 800,
         "resizable": true,
-        "title": "atmosphere_calculator",
-        "width": 800
+        "title": "Atmosphere Calculator",
+        "width": 1600
       }
     ]
   }
