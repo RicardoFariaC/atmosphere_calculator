@@ -3,7 +3,11 @@
 import { invoke } from "@tauri-apps/api/tauri"
 import { Calculator, FileQuestion, LineChart, Table } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { Output } from "./components/Output"
+import { Output } from "./components/Output/Output"
+import { TemperatureOutput } from "./components/Output/TemperatureOutput";
+import { AltitudeForm } from "./components/Form/AltitudeForm";
+import { InfoCard } from "./components/TextCards/InfoCard";
+import { dimensionlessUnit } from "./utils/units";
 
 interface ComputeReturn {
   [key: string]: number;
@@ -12,6 +16,8 @@ interface ComputeReturn {
 export default function Home() {
   const [altitude, setAltitude] = useState<string>("");
   const [altitudeUnit, setAltitudeUnit] = useState<number>(1);
+  const [velocity, setVelocity] = useState<string>("");
+  const [velocityUnit, setVelocityUnit] = useState<number>(1);
 
   const [atmosphere, setAtmosphere] = useState<ComputeReturn>({});
   const [pressure, setPressure] = useState<number>(0);
@@ -22,7 +28,7 @@ export default function Home() {
 
   const handleInput = async (e: FormEvent) => {
     e.preventDefault()
-    await invoke<ComputeReturn>("compute", { altitude: parseFloat(altitude), altitudeUnit: altitudeUnit })
+    await invoke<ComputeReturn>("compute", { altitude: parseFloat(altitude) * altitudeUnit || 0, velocity: parseFloat(velocity) * velocityUnit || 0 })
       .then(res => {
         return setAtmosphere(res)
       })
@@ -62,7 +68,7 @@ export default function Home() {
                 </select>
               </div>
               <div className="flex items-center gap-4 flex-1">
-                <label htmlFor="altitude" className="basis-1/2">Altitude</label>
+                <label htmlFor="altitude" className="basis-1/2">Geometric Altitude</label>
                 <input
                   value={altitude}
                   onChange={(e) => setAltitude(e.target.value)}
@@ -70,21 +76,27 @@ export default function Home() {
                   className="bg-zinc-800 p-2 rounded-md basis-1/4"
                   />
                 <select className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4" value={altitudeUnit} onChange={(e) => setAltitudeUnit(parseFloat(e.target.value))}>
-                  <option value="1">meters[m]</option>
                   <option value="1000">kilometers[km]</option>
+                  <option value="1">meters[m]</option>
                   <option value="0.3048">feet[ft]</option>
                 </select>
               </div>
               <div className="flex items-center gap-4 flex-1">
                 <label htmlFor="velocity" className="basis-1/2">Velocity</label>
                 <input 
+                  value={velocity}
+                  onChange={(e) => setVelocity(String(parseFloat(e.target.value) * velocityUnit))}
                   type="number" 
                   id="velocity" 
                   className="bg-zinc-800 p-2 rounded-md basis-1/4"
                   />
-                <select className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4">
-                  <option value="1">meters/second[m/s]</option>
+                <select 
+                  value={velocityUnit}
+                  className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4"
+                  onChange={e => setVelocityUnit(parseFloat(e.target.value))}
+                >
                   <option value="0.2777778">kilometers/hour[km/h]</option>
+                  <option value="1">meters/second[m/s]</option>
                   <option value="0.3048">feet/second[ft/s]</option>
                 </select>
               </div>
@@ -96,8 +108,8 @@ export default function Home() {
                   className="bg-zinc-800 p-2 rounded-md basis-1/4"
                   />
                 <select className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4">
-                  <option value="1">meters[m]</option>
                   <option value="1000">kilometers[km]</option>
+                  <option value="1">meters[m]</option>
                   <option value="0.3048">feet[ft]</option>
                 </select>
               </div>
@@ -124,27 +136,23 @@ export default function Home() {
           </div>
           <p className="pt-4 pb-2">Output</p>
           <div className="w-auto p-6 rounded-md bg-slate-100 bg-opacity-20 drop-shadow-lg shadow-lg">
+            <InfoCard
+              className="mb-5"
+              label="Outputs from altitude only"
+            />
+            <AltitudeForm 
+              atmosphere={atmosphere}
+            />
+            <InfoCard 
+              className="my-5"
+              label="Outputs from altitude and velocity"
+            />
             <form className="flex flex-col gap-4 text-lg">
               <Output
-                label="pressure"
-                value={atmosphere["pressure"]}
-              />
-              <Output
-                label="Speed of Sound"
-                value={atmosphere["speed_of_sound"]}
-              />
-              <Output
-                label="Density"
-                value={atmosphere["density"]}
-              />
-              <Output
-                label="Temperature"
-                value={atmosphere["temperature"]}
-              />
-              <Output
-                label="Viscosities"
-                value={atmosphere["viscosities"]}
-              />
+                label="Mach Number"
+                value={atmosphere["mach"]}
+                unit={dimensionlessUnit}
+              />              
             </form>
           </div>
         </main>
