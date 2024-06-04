@@ -24,7 +24,6 @@ export const Output = ({ label, value, unit, fixed = 5, unitSystem }: propTypes)
     }
 
     useEffect(() => {
-        console.log("a "+unitSystem);
         setSelectValueUnit(parseFloat(unit.find((unitValue) => unitValue.type == unitSystem)?.value || "1"))
         setOptionUnit(unit.find((unitValue) => unitValue.type == unitSystem)?.unit as string)
     }, [unitSystem])
