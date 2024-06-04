@@ -1,16 +1,17 @@
 "use client"
-import { ReactNode, ReactPropTypes, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { SelectOption } from "./Select/SelectOptions";
-import { Unit } from "@/app/utils/units";
+import { Unit, UnitSystem } from "@/app/utils/units";
 
 interface propTypes {
     label: string,
     value: number,
     unit: Unit[],
     fixed?: number,
+    unitSystem: UnitSystem
 }
 
-export const Output = ({ label, value, unit, fixed = 2}: propTypes) => {
+export const Output = ({ label, value, unit, fixed = 5, unitSystem }: propTypes) => {
     const [optionUnit, setOptionUnit] = useState<string>(unit.find((unitValue) => parseFloat(unitValue.value) == 1)?.unit || "");
     const [selectValueUnit, setSelectValueUnit] = useState<number>(1);
 
@@ -20,14 +21,20 @@ export const Output = ({ label, value, unit, fixed = 2}: propTypes) => {
 
     function toCapitalize(label: string): string {
         return [label.at(0)?.toUpperCase() + "" + label.slice(1)].join("");
-    } 
+    }
+
+    useEffect(() => {
+        console.log("a "+unitSystem);
+        setSelectValueUnit(parseFloat(unit.find((unitValue) => unitValue.type == unitSystem)?.value || "1"))
+        setOptionUnit(unit.find((unitValue) => unitValue.type == unitSystem)?.unit as string)
+    }, [unitSystem])
 
     return (
         <div className="flex items-center gap-4 flex-1 ">
             <label htmlFor={label} className="basis-1/2">{toCapitalize(label)}</label>
             <input
                 disabled
-                value={parseFloat((value / (selectValueUnit || 1)).toFixed(fixed)) ? (value / (selectValueUnit || 1)).toFixed(fixed) : 0}
+                value={parseFloat((value / (selectValueUnit || 1)).toPrecision(fixed)) ? (value / (selectValueUnit || 1)).toPrecision(fixed) : 0}
                 id={label} 
                 className="bg-zinc-800 p-2 rounded-md basis-1/4"
             />
