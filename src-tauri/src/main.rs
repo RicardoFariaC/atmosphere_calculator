@@ -1,7 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{collections::HashMap};
+mod calculator_functions;
+use std::{collections::HashMap, result};
+
+use calculator_functions::altitude::{self, calculate_altitude_values};
 
 fn calculate_molecular_weight_ratio(altitude: f32) -> f32 {
   const MOLECULAR_RATIO: [f32; 13] = [
@@ -27,16 +30,25 @@ fn calculate_molecular_weight_ratio(altitude: f32) -> f32 {
   return MOLECULAR_RATIO[i];
 }
 
-fn calculate_mean_molecular_weight(molecular_weight: [f32; 10], fractional_volume: [f32; 10]) -> f32 {
+fn calculate_mean_molecular_weight_test(altitude: f32) -> f32 {
+  let mwr: f32 = calculate_molecular_weight_ratio(altitude);
+
+  let mmwr = mwr * 28.96442528;
+
+  mmwr
+}
+
+fn calculate_mean_molecular_weight(molecular_weight: [f32; 5], gas_density_sum: f32, density: [f32;5]) -> f32 { // 20, pg.25
+  
   let mut numerator: f32 = 0.0;
-  let mut denominator: f32 = 0.0;
+  let denominator: f32 = gas_density_sum;
 
   for i in 0..molecular_weight.len() {
-    numerator += molecular_weight[i] * fractional_volume[i];
-    denominator += fractional_volume[i];
+    numerator += molecular_weight[i] * density[i];
   }
 
   let result = numerator / denominator;
+  println!("{}", result);
 
   result
 }
@@ -46,9 +58,26 @@ fn calculate_mach(speed_of_sound: f32, velocity: f32) -> f32 {
 }
 
 #[tauri::command]
-fn compute(altitude: f32, velocity: f32) -> HashMap<String, f32>{
-  let mut results = HashMap::<String, f32>::new();
+fn compute_calcs(altitude: f32, velocity: f32) -> HashMap<String, f32> {
+  let mut results = HashMap::new();
+  
+  for (key, val) in calculate_altitude_values(altitude).iter() {
+    results.insert(key.to_string(), val.clone());
+  }
 
+  results.insert("mach".to_string(), calculate_mach(*results.get("speed_of_sound").unwrap(), velocity));
+
+  results
+}
+
+#[tauri::command]
+fn compute(altitude: f32, velocity: f32) -> HashMap<String, f32>{
+  let results;
+
+  const AVOGADRO: f32 = 6.022169e23;
+  const GAS_SUM: f32 = 1.447265163e20;
+  const THETA: f32 = 3.65e-10;
+  const PI: f32 = 3.1415927;
   const EARTH_RADIUS: f32 = 6356.766e3;
   const AIR_MOL_WEIGHT: f32 = 28.9644;
   const DENSITY_SL: f32 = 1.225;
@@ -56,10 +85,10 @@ fn compute(altitude: f32, velocity: f32) -> HashMap<String, f32>{
   const TEMPERATURE_SL: f32 = 288.15;
   const GAMMA: f32 = 1.4;
   const GRAVITY: f32 = 9.80665;
-  const R_GAS: f32 = 8.31432;
+  const R_GAS: f32 = 8.31432; // R* - Constante Geral dos Gases
   const R: f32 = 287.053;
   const R_0: f32 = 6356766.0;
-  const ALTITUDES: [i32; 8] = [0, 11000, 20000, 32000, 47000, 51000, 71000, 84852];
+  const ALTITUDES: [i32; 8] = [0, 11000, 20000, 32000, 47000, 51000, 71000, 84853];
   const PRESSURE_REL: [f32; 8] = [
     1.0, 2.23361105092158e-1, 
     5.403295010784876e-2, 8.566678359291667e-3, 
@@ -79,21 +108,6 @@ fn compute(altitude: f32, velocity: f32) -> HashMap<String, f32>{
     -2.0, 0.0
   ];
   const G_M_R: f32 = GRAVITY * AIR_MOL_WEIGHT / R_GAS;
-  const MOLECULAR_WEIGHT: [f32; 10] = [
-    28.0134, 31.9988,
-    39.948, 44.00995,
-    20.183, 4.0026,
-    83.8, 131.3,
-    16.04303, 2.01594
-  ];
-  const FRACTIONAL_VOLUME: [f32; 10] = [
-    0.78084, 0.209476,
-    0.00934, 0.000314,
-    0.00001818, 0.00000524,
-    0.00000114, 0.000000087,
-    0.000002, 0.0000005
-  ];
-
 
   let altitude_with_unit = altitude; 
   let geopotential_altitude = 
@@ -125,6 +139,7 @@ fn compute(altitude: f32, velocity: f32) -> HashMap<String, f32>{
   let temperature = base_temp + temp_grad * delta_altitude;
 
   let pressure_relative: f32;
+
   if temp_grad.abs() < 1e-10 { // 33a
     pressure_relative = 
       pressure_relative_base * f32::exp(-G_M_R * delta_altitude / 1000.0 / base_temp);
@@ -137,20 +152,32 @@ fn compute(altitude: f32, velocity: f32) -> HashMap<String, f32>{
   let speed_of_sound = f32::sqrt(GAMMA * R * temperature);
   let pressure = pressure_relative * PRESSURE_SL as f32;
   let density = DENSITY_SL * pressure_relative * TEMPERATURE_SL / temperature;
-  let viscosities = 1.512041288 * f32::powf(temperature, 1.5) / (temperature + 120.0) / 1000000.0;
-  let mean_molecular_weight = calculate_mean_molecular_weight(MOLECULAR_WEIGHT, FRACTIONAL_VOLUME);
+  let mean_molecular_weight = calculate_mean_molecular_weight_test(altitude);
+  let dynamic_viscosity = 1.458e-6 * f32::powf(temperature, 1.5) / (temperature + 120.0);
+  let kinematic_viscosity = dynamic_viscosity / density;
+  let coefficient_of_therm_cond = (2.64638 * 0.001 * f32::powf(temperature, 1.5)) / (temperature + 245.4 * f32::powf(10.0,-(12.0/temperature)));
+  let mean_free_path = (f32::sqrt(2.0) * R_GAS * temperature) / ((2.0 * PI) * f32::powf(THETA, 2.0) * pressure * AVOGADRO);
+  let dynamic_pressure: f32 = density * velocity.powf(2.0) / 2.0;
+  let mach_number: f32 = calculate_mach(speed_of_sound, velocity);
+  let total_temperature: f32 = temperature * (1.0 + ((GAMMA - 1.0)/2.0) * mach_number.powf(2.0));
 
   results = HashMap::from([
     (String::from("geometric"), altitude),
     (String::from("geopotential"), geopotential_altitude),
     (String::from("gravity_accel"), gravity_accel),
     (String::from("mean_molecular_weight"), mean_molecular_weight),
+    (String::from("mean_molecular_weight_ratio"), calculate_molecular_weight_ratio(altitude)),
     (String::from("temperature"), temperature),
     (String::from("speed_of_sound"), speed_of_sound),
     (String::from("pressure"), pressure),
     (String::from("density"), density),
-    (String::from("viscosities"), viscosities),
-    (String::from("mach"), calculate_mach(speed_of_sound, velocity))
+    (String::from("dynamic_viscosity"), dynamic_viscosity),
+    (String::from("kinematic_viscosity"), kinematic_viscosity),
+    (String::from("coefficient_of_therm_cond"), coefficient_of_therm_cond),
+    (String::from("mean_free_path"), mean_free_path),
+    (String::from("mach"), mach_number),
+    (String::from("true_dynamic_pressure"), dynamic_pressure),
+    (String::from("total_temperature"), total_temperature)
   ]);
 
   results
