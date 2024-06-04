@@ -7,13 +7,15 @@ import { Output } from "./components/Output/Output"
 import { TemperatureOutput } from "./components/Output/TemperatureOutput";
 import { AltitudeForm } from "./components/Form/AltitudeForm";
 import { InfoCard } from "./components/TextCards/InfoCard";
-import { dimensionlessUnit } from "./utils/units";
+import { Unit, UnitSystem, dimensionlessUnit } from "./utils/units";
+import { VelocityForm } from "./components/Form/VelocityForm";
 
 interface ComputeReturn {
   [key: string]: number;
 }
 
 export default function Home() {
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(UnitSystem.INTERNACIONAL);
   const [altitude, setAltitude] = useState<string>("");
   const [altitudeUnit, setAltitudeUnit] = useState<number>(1);
   const [velocity, setVelocity] = useState<string>("");
@@ -63,8 +65,15 @@ export default function Home() {
             <form className="flex flex-col gap-4 text-lg">
               <div className="flex items-center gap-4 flex-1">
                 <label htmlFor="unit" className="basis-1/2">Unit System</label>
-                <select name="" id="" disabled={true} className="bg-zinc-800 p-2 rounded-md w-64 basis-1/2">
-                  <option value="is">International System</option>
+                <select 
+                  name="" id="" disabled={false} className="bg-zinc-800 p-2 rounded-md w-64 basis-1/2"
+                  onChange={
+                    (e) => setUnitSystem(parseInt(e.target.value))
+                  }
+                  value={unitSystem}
+                >
+                  <option value={1}>International System</option>
+                  <option value={2}>Imperial System</option>
                 </select>
               </div>
               <div className="flex items-center gap-4 flex-1">
@@ -100,31 +109,6 @@ export default function Home() {
                   <option value="0.3048">feet/second[ft/s]</option>
                 </select>
               </div>
-              <div className="flex items-center gap-4 flex-1">
-                <label htmlFor="refLength" className="basis-1/2">Reference Length</label>
-                <input 
-                  type="number" 
-                  id="refLength" 
-                  className="bg-zinc-800 p-2 rounded-md basis-1/4"
-                  />
-                <select className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4">
-                  <option value="1000">kilometers[km]</option>
-                  <option value="1">meters[m]</option>
-                  <option value="0.3048">feet[ft]</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-4 flex-1">
-                <label htmlFor="temperature" className="basis-1/2">Temperature offset</label>
-                <input 
-                  type="number" 
-                  id="temperature"
-                  className="bg-zinc-800 p-2 rounded-md basis-1/4" 
-                />
-                <select className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4" >
-                  <option value="1">Celsius[°C] / Kelvin[K]</option>
-                  <option value="0.5556">Fahrenheit[°F] / Rankine[°R]</option>
-                </select>
-              </div>
               <div className="flex items-center justify-end gap-4 h-12">
                 <button 
                   className="px-4 py-1 bg-zinc-600 drop-shadow-md shadow-md rounded-md focus:outline"
@@ -142,18 +126,16 @@ export default function Home() {
             />
             <AltitudeForm 
               atmosphere={atmosphere}
+              unitSystem={unitSystem}
             />
             <InfoCard 
               className="my-5"
               label="Outputs from altitude and velocity"
             />
-            <form className="flex flex-col gap-4 text-lg">
-              <Output
-                label="Mach Number"
-                value={atmosphere["mach"]}
-                unit={dimensionlessUnit}
-              />              
-            </form>
+            <VelocityForm
+              atmosphere={atmosphere}
+              unitSystem={unitSystem}
+            />
           </div>
         </main>
       </div >
