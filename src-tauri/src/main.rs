@@ -2,9 +2,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod calculator_functions;
-use std::{collections::HashMap, result};
+use std::collections::HashMap;
 
-use calculator_functions::altitude::{self, calculate_altitude_values};
+use calculator_functions::{altitude::{self, calculate_temperature, choose_altitude_value, choose_pressure_value}, consts};
 
 fn calculate_molecular_weight_ratio(altitude: f32) -> f32 {
   const MOLECULAR_RATIO: [f32; 13] = [
@@ -30,27 +30,10 @@ fn calculate_molecular_weight_ratio(altitude: f32) -> f32 {
   return MOLECULAR_RATIO[i];
 }
 
-fn calculate_mean_molecular_weight_test(altitude: f32) -> f32 {
+fn calculate_mean_molecular_weight(altitude: f32) -> f32 {
   let mwr: f32 = calculate_molecular_weight_ratio(altitude);
-
   let mmwr = mwr * 28.96442528;
-
   mmwr
-}
-
-fn calculate_mean_molecular_weight(molecular_weight: [f32; 5], gas_density_sum: f32, density: [f32;5]) -> f32 { // 20, pg.25
-  
-  let mut numerator: f32 = 0.0;
-  let denominator: f32 = gas_density_sum;
-
-  for i in 0..molecular_weight.len() {
-    numerator += molecular_weight[i] * density[i];
-  }
-
-  let result = numerator / denominator;
-  println!("{}", result);
-
-  result
 }
 
 fn calculate_mach(speed_of_sound: f32, velocity: f32) -> f32 {
@@ -58,108 +41,36 @@ fn calculate_mach(speed_of_sound: f32, velocity: f32) -> f32 {
 }
 
 #[tauri::command]
-fn compute_calcs(altitude: f32, velocity: f32) -> HashMap<String, f32> {
-  let mut results = HashMap::new();
-  
-  for (key, val) in calculate_altitude_values(altitude).iter() {
-    results.insert(key.to_string(), val.clone());
-  }
-
-  results.insert("mach".to_string(), calculate_mach(*results.get("speed_of_sound").unwrap(), velocity));
-
-  results
-}
-
-#[tauri::command]
 fn compute(altitude: f32, velocity: f32) -> HashMap<String, f32>{
   let results;
 
-  const AVOGADRO: f32 = 6.022169e23;
-  const GAS_SUM: f32 = 1.447265163e20;
-  const THETA: f32 = 3.65e-10;
-  const PI: f32 = 3.1415927;
-  const EARTH_RADIUS: f32 = 6356.766e3;
-  const AIR_MOL_WEIGHT: f32 = 28.9644;
-  const DENSITY_SL: f32 = 1.225;
-  const PRESSURE_SL: i32 = 101325;
-  const TEMPERATURE_SL: f32 = 288.15;
-  const GAMMA: f32 = 1.4;
-  const GRAVITY: f32 = 9.80665;
-  const R_GAS: f32 = 8.31432; // R* - Constante Geral dos Gases
-  const R: f32 = 287.053;
-  const R_0: f32 = 6356766.0;
-  const ALTITUDES: [i32; 8] = [0, 11000, 20000, 32000, 47000, 51000, 71000, 84853];
-  const PRESSURE_REL: [f32; 8] = [
-    1.0, 2.23361105092158e-1, 
-    5.403295010784876e-2, 8.566678359291667e-3, 
-    1.0945601337771144e-3, 6.606353132858367e-4, 
-    3.904683373343926e-5, 3.6850095235747942e-6
-  ];
-  const TEMPERATURES: [f32; 8] = [
-    288.15, 216.65, 
-    216.65, 228.65, 
-    270.65, 270.65, 
-    214.65, 186.946
-  ];
-  const TEMP_GRADS: [f32; 8] = [
-    -6.5, 0.0, 
-    1.0, 2.8, 
-    0.0, -2.8, 
-    -2.0, 0.0
-  ];
-  const G_M_R: f32 = GRAVITY * AIR_MOL_WEIGHT / R_GAS;
-
   let altitude_with_unit = altitude; 
   let geopotential_altitude = 
-    EARTH_RADIUS * (altitude_with_unit) / (EARTH_RADIUS + (altitude_with_unit));
+  consts::EARTH_RADIUS * (altitude_with_unit) / (consts::EARTH_RADIUS + (altitude_with_unit));
 
   // defining which altitude use
-  let mut i = 0;
-  if geopotential_altitude > 0.0 {
-    if geopotential_altitude > ALTITUDES[ALTITUDES.len()-1] as f32 {
-      let results = HashMap::from([
-        (String::from(""), 0.0)
-      ]);
+  let i = choose_altitude_value(geopotential_altitude);
+  if i == consts::ALTITUDES.len() {
+    let results = HashMap::from([
+      (String::from(""), 0.0)
+    ]);
+    return results;
+  }  
 
-      return results;
-    }
-
-    while geopotential_altitude > ALTITUDES[i+1] as f32 {
-      i += 1;
-      if i+1 >= ALTITUDES.len() {
-        break;
-      }
-    }
-  }
-
-  let base_temp: f32 = TEMPERATURES[i];
-  let temp_grad: f32 = TEMP_GRADS[i] / 1000.0;
-  let pressure_relative_base: f32 = PRESSURE_REL[i];
-  let delta_altitude: f32 = geopotential_altitude - ALTITUDES[i] as f32;
-  let temperature = base_temp + temp_grad * delta_altitude;
-
-  let pressure_relative: f32;
-
-  if temp_grad.abs() < 1e-10 { // 33a
-    pressure_relative = 
-      pressure_relative_base * f32::exp(-G_M_R * delta_altitude / 1000.0 / base_temp);
-  } else { // 33b
-    pressure_relative = 
-      pressure_relative_base * f32::powf(base_temp / temperature, G_M_R / temp_grad / 1000.0);
-  }
-
-  let gravity_accel = GRAVITY * f32::powf(R_0 as f32 / (R_0 as f32+altitude), 2.0);
-  let speed_of_sound = f32::sqrt(GAMMA * R * temperature);
-  let pressure = pressure_relative * PRESSURE_SL as f32;
-  let density = DENSITY_SL * pressure_relative * TEMPERATURE_SL / temperature;
-  let mean_molecular_weight = calculate_mean_molecular_weight_test(altitude);
+  let temperature = calculate_temperature(geopotential_altitude, i);
+  let pressure_relative = choose_pressure_value(geopotential_altitude, temperature, i);
+  let gravity_accel = consts::GRAVITY * f32::powf(consts::R_0 as f32 / (consts::R_0 as f32+altitude), 2.0);
+  let speed_of_sound = f32::sqrt(consts::GAMMA * consts::R * temperature);
+  let pressure = pressure_relative * consts::PRESSURE_SL as f32;
+  let density = consts::DENSITY_SL * pressure_relative * consts::TEMPERATURE_SL / temperature;
+  let mean_molecular_weight = calculate_mean_molecular_weight(altitude);
   let dynamic_viscosity = 1.458e-6 * f32::powf(temperature, 1.5) / (temperature + 120.0);
   let kinematic_viscosity = dynamic_viscosity / density;
   let coefficient_of_therm_cond = (2.64638 * 0.001 * f32::powf(temperature, 1.5)) / (temperature + 245.4 * f32::powf(10.0,-(12.0/temperature)));
-  let mean_free_path = (f32::sqrt(2.0) * R_GAS * temperature) / ((2.0 * PI) * f32::powf(THETA, 2.0) * pressure * AVOGADRO);
+  let mean_free_path = (f32::sqrt(2.0) * consts::R_GAS * temperature) / ((2.0 * consts::PI) * f32::powf(consts::THETA, 2.0) * pressure * consts::AVOGADRO);
   let dynamic_pressure: f32 = density * velocity.powf(2.0) / 2.0;
   let mach_number: f32 = calculate_mach(speed_of_sound, velocity);
-  let total_temperature: f32 = temperature * (1.0 + ((GAMMA - 1.0)/2.0) * mach_number.powf(2.0));
+  let total_temperature: f32 = temperature * (1.0 + ((consts::GAMMA - 1.0)/2.0) * mach_number.powf(2.0));
 
   results = HashMap::from([
     (String::from("geometric"), altitude),
@@ -184,13 +95,154 @@ fn compute(altitude: f32, velocity: f32) -> HashMap<String, f32>{
 }
 
 #[tauri::command]
+fn compute_table(min_altitude: i32, max_altitude: i32, step: usize) -> HashMap<String, Vec<f32>> {
+  let mut altitude_vec: Vec<f32> = vec![];
+  let mut temperature_vec: Vec<f32> = vec![];
+  let mut pressure_vec: Vec<f32> = vec![];
+  let mut density_vec: Vec<f32> = vec![];
+  let mut speed_of_sound_vec: Vec<f32> = vec![];
+  let mut dynamic_v_vec: Vec<f32> = vec![];
+
+  for instant_altitude in (min_altitude..max_altitude+1).step_by(step) {
+    altitude_vec.push(instant_altitude as f32);
+
+    let geopotential_altitude = consts::EARTH_RADIUS * (instant_altitude as f32) / (consts::EARTH_RADIUS + (instant_altitude as f32));
+    let i = choose_altitude_value(geopotential_altitude);
+    if i == 8 {
+      return HashMap::from([
+        (String::from("altitude"), vec![]),
+      ]);
+    }
+    let temperature = calculate_temperature(geopotential_altitude, i);
+    let pressure_relative = choose_pressure_value(geopotential_altitude, temperature, i);
+    let pressure = pressure_relative * consts::PRESSURE_SL as f32;
+    let density = consts::DENSITY_SL * pressure_relative * consts::TEMPERATURE_SL / temperature;
+    let speed_of_sound = f32::sqrt(consts::GAMMA * consts::R * temperature);
+    let dynamic_viscosity = 1.458e-6 * f32::powf(temperature, 1.5) / (temperature + 120.0);
+
+    temperature_vec.push(temperature);
+    pressure_vec.push(pressure);
+    density_vec.push(density);
+    speed_of_sound_vec.push(speed_of_sound);
+    dynamic_v_vec.push(dynamic_viscosity);
+  }
+
+  let res: HashMap<String, Vec<f32>> = HashMap::from([
+    (String::from("altitude"), altitude_vec),
+    (String::from("temperature"), temperature_vec),
+    (String::from("pressure"), pressure_vec),
+    (String::from("density"), density_vec),
+    (String::from("speed_of_sound"), speed_of_sound_vec),
+    (String::from("dynamic_v"), dynamic_v_vec),
+  ]);
+  res
+}
+
+#[tauri::command]
+fn compute_graph_temperature() -> Vec<HashMap<String, f32>> {
+  let mut vec: Vec<HashMap<String,f32>> = vec![];
+  for instant_altitude in (0..consts::ALTITUDES.last().cloned().unwrap()).rev().step_by(1000) {
+    let mut result_map: HashMap<String, f32> = HashMap::new();
+    let geopotential_altitude = consts::EARTH_RADIUS * (instant_altitude as f32) / (consts::EARTH_RADIUS + (instant_altitude as f32));
+    let i = choose_altitude_value(geopotential_altitude);
+    let temperature = calculate_temperature(geopotential_altitude, i);
+
+    result_map.insert("altitude".to_string(), instant_altitude as f32);  
+    result_map.insert("temperature".to_string(), temperature);  
+    vec.push(result_map);
+
+  }
+
+  vec
+}
+
+#[tauri::command]
+fn compute_graph_pressure() -> Vec<HashMap<String, f32>> {
+  let mut vec: Vec<HashMap<String,f32>> = vec![];
+  for instant_altitude in (0..consts::ALTITUDES.last().cloned().unwrap()).rev().step_by(1000) {
+    let mut result_map: HashMap<String, f32> = HashMap::new();
+    let geopotential_altitude = consts::EARTH_RADIUS * (instant_altitude as f32) / (consts::EARTH_RADIUS + (instant_altitude as f32));
+    let i = choose_altitude_value(geopotential_altitude);
+    let temperature = calculate_temperature(geopotential_altitude, i);
+    let pressure_relative = choose_pressure_value(geopotential_altitude, temperature, i);
+    let pressure = pressure_relative * consts::PRESSURE_SL as f32;
+
+    result_map.insert("altitude".to_string(), instant_altitude as f32);  
+    result_map.insert("pressure".to_string(), pressure);  
+    vec.push(result_map);
+
+  }
+
+  vec
+}
+
+#[tauri::command]
+fn compute_graph_density() -> Vec<HashMap<String,f32>> {
+  let mut vec: Vec<HashMap<String,f32>> = vec![];
+  for instant_altitude in (0..consts::ALTITUDES.last().cloned().unwrap()).rev().step_by(1000) {
+    let mut result_map: HashMap<String, f32> = HashMap::new();
+    let geopotential_altitude = consts::EARTH_RADIUS * (instant_altitude as f32) / (consts::EARTH_RADIUS + (instant_altitude as f32));
+    let i = choose_altitude_value(geopotential_altitude);
+    let temperature = calculate_temperature(geopotential_altitude, i);
+    let pressure_relative = choose_pressure_value(geopotential_altitude, temperature, i);
+    let density = consts::DENSITY_SL * pressure_relative * consts::TEMPERATURE_SL / temperature;
+
+    result_map.insert("altitude".to_string(), instant_altitude as f32);  
+    result_map.insert("density".to_string(), density);  
+    vec.push(result_map);
+  }
+
+  vec
+}
+
+#[tauri::command]
+fn compute_graph_sos() -> Vec<HashMap<String,f32>> {
+  let mut vec: Vec<HashMap<String,f32>> = vec![];
+  for instant_altitude in (0..consts::ALTITUDES.last().cloned().unwrap()).rev().step_by(1000) {
+    let mut result_map: HashMap<String, f32> = HashMap::new();
+    let geopotential_altitude = consts::EARTH_RADIUS * (instant_altitude as f32) / (consts::EARTH_RADIUS + (instant_altitude as f32));
+    let i = choose_altitude_value(geopotential_altitude);
+    let temperature = calculate_temperature(geopotential_altitude, i);
+    let speed_of_sound = f32::sqrt(consts::GAMMA * consts::R * temperature);
+
+    result_map.insert("altitude".to_string(), instant_altitude as f32);  
+    result_map.insert("speed_of_sound".to_string(), speed_of_sound);  
+    vec.push(result_map);
+  }
+
+  vec
+}
+
+#[tauri::command]
+fn compute_graph_viscosity() -> Vec<HashMap<String,f32>> {
+  let mut vec: Vec<HashMap<String,f32>> = vec![];
+  for instant_altitude in (0..consts::ALTITUDES.last().cloned().unwrap()).rev().step_by(1000) {
+    let mut result_map: HashMap<String, f32> = HashMap::new();
+    let geopotential_altitude = consts::EARTH_RADIUS * (instant_altitude as f32) / (consts::EARTH_RADIUS + (instant_altitude as f32));
+    let i = choose_altitude_value(geopotential_altitude);
+    let temperature = calculate_temperature(geopotential_altitude, i);
+    let dynamic_viscosity = 1.458e-6 * f32::powf(temperature, 1.5) / (temperature + 120.0);
+
+    result_map.insert("altitude".to_string(), instant_altitude as f32);  
+    result_map.insert("viscosity".to_string(), dynamic_viscosity);  
+    vec.push(result_map);
+  }
+
+  vec
+}
+
+#[tauri::command]
 fn greet(name: &str) -> String {
    format!("Hello, {}!", name)
 }
 
 fn main() {
   tauri::Builder::default()
-    .invoke_handler(tauri::generate_handler![greet, compute])
+    .invoke_handler(tauri::generate_handler![greet, compute, 
+      compute_table, compute_graph_temperature, 
+      compute_graph_pressure, compute_graph_density,
+      compute_graph_sos, compute_graph_viscosity
+      ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

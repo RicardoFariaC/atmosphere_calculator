@@ -1,3 +1,4 @@
+pub const AVOGADRO: f32 = 6.022169e23; 
 pub const THETA: f32 = 3.65 * 10e-10;
 pub const GAS_DENSITY: [f32;  5] = [
     1.129794 * 10e20, 8.6 * 10e16,
