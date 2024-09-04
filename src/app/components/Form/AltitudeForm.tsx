@@ -1,7 +1,6 @@
 import { UnitSystem, accelerationUnits, coeffiecientOfThermUnits, densityUnits, distanceUnits, dynamicVUnits, kinematicVUnits, meanFreePathUnits, meanMolecularWeightUnits, pressureUnits, sosUnits, } from "@/app/utils/units"
 import { Output } from "../Output/Output"
 import { TemperatureOutput } from "../Output/TemperatureOutput"
-import { useEffect } from "react"
 
 interface AltitudeFormPropTypes {
     atmosphere: {[key: string]: number},

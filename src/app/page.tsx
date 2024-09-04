@@ -1,14 +1,12 @@
 "use client"
 
 import { invoke } from "@tauri-apps/api/tauri"
-import { Calculator, FileQuestion, LineChart, Table } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { Output } from "./components/Output/Output"
-import { TemperatureOutput } from "./components/Output/TemperatureOutput";
 import { AltitudeForm } from "./components/Form/AltitudeForm";
 import { InfoCard } from "./components/TextCards/InfoCard";
-import { Unit, UnitSystem, dimensionlessUnit } from "./utils/units";
+import { UnitSystem } from "./utils/units";
 import { VelocityForm } from "./components/Form/VelocityForm";
+import NavBar from "./components/NavBar";
 
 interface ComputeReturn {
   [key: string]: number;
@@ -20,13 +18,7 @@ export default function Home() {
   const [altitudeUnit, setAltitudeUnit] = useState<number>(1);
   const [velocity, setVelocity] = useState<string>("");
   const [velocityUnit, setVelocityUnit] = useState<number>(1);
-
   const [atmosphere, setAtmosphere] = useState<ComputeReturn>({});
-  const [pressure, setPressure] = useState<number>(0);
-
-  useEffect(() => {
-    setPressure(atmosphere["pressure"]);
-  }, [atmosphere, pressure]);
 
   const handleInput = async (e: FormEvent) => {
     e.preventDefault()
@@ -36,37 +28,19 @@ export default function Home() {
       })
       .catch(console.error);
   };
+  
   return (
     <div className="flex h-screen flex-col">
       <div className="flex flex-1">
-        <aside className="w-auto">
-          <nav className="bg-zinc-900 space-y-2 sticky top-3 p-6 m-3 rounded-md">
-            <a href="" className="flex items-center gap-2 hover:bg-slate-300 hover:bg-opacity-20 py-4 px-2 rounded-md">
-              <Calculator />
-              Calculator
-            </a>
-            <a href="" className="flex items-center gap-2 hover:bg-slate-300 hover:bg-opacity-20 py-4 px-2 rounded-md">
-              <Table />
-              Table
-            </a>
-            <a href="" className="flex items-center gap-2 hover:bg-slate-300 hover:bg-opacity-20 py-4 px-2 rounded-md">
-              <LineChart />
-              Graphs
-            </a>
-            <a href="" className="flex items-center gap-2 hover:bg-slate-300 hover:bg-opacity-20 py-4 px-2 rounded-md">
-              <FileQuestion />
-              Help
-            </a>
-          </nav>
-        </aside>
+        <NavBar />
         <main className="flex-1 p-6">
           <p className="pb-2">Input</p>
           <div className="w-auto p-6 rounded-md bg-slate-100 bg-opacity-20 drop-shadow-lg shadow-lg">
             <form className="flex flex-col gap-4 text-lg">
               <div className="flex items-center gap-4 flex-1">
-                <label htmlFor="unit" className="basis-1/2">Unit System</label>
+                <label htmlFor="unit" className="basis-1/4">Unit System</label>
                 <select 
-                  name="" id="" disabled={false} className="bg-zinc-800 p-2 rounded-md w-64 basis-1/2"
+                  name="" id="" disabled={false} className="bg-zinc-800 p-2 rounded-md w-64 basis-full"
                   onChange={
                     (e) => setUnitSystem(parseInt(e.target.value))
                   }
@@ -82,8 +56,9 @@ export default function Home() {
                   value={altitude}
                   onChange={(e) => setAltitude(e.target.value)}
                   id="altitude"
-                  className="bg-zinc-800 p-2 rounded-md basis-1/4"
-                  />
+                  className="bg-zinc-800 p-2 rounded-md basis-1/2"
+                  type="number"
+                />
                 <select className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4" value={altitudeUnit} onChange={(e) => setAltitudeUnit(parseFloat(e.target.value))}>
                   <option value="1000">kilometers[km]</option>
                   <option value="1">meters[m]</option>
@@ -95,9 +70,9 @@ export default function Home() {
                 <input 
                   value={velocity}
                   onChange={(e) => setVelocity(String(parseFloat(e.target.value) * velocityUnit))}
-                  type="number" 
                   id="velocity" 
-                  className="bg-zinc-800 p-2 rounded-md basis-1/4"
+                  className="bg-zinc-800 p-2 rounded-md basis-1/2"
+                  type="number"
                   />
                 <select 
                   value={velocityUnit}
@@ -111,10 +86,10 @@ export default function Home() {
               </div>
               <div className="flex items-center justify-end gap-4 h-12">
                 <button 
-                  className="px-4 py-1 bg-zinc-600 drop-shadow-md shadow-md rounded-md focus:outline"
+                  className="px-4 py-1 bg-zinc-600 drop-shadow-md shadow-md rounded-md focus:outline hover:bg-zinc-900 hover:opacity-80"
                   onClick={handleInput}
                 >Compute</button>
-                <button className="px-4 py-1 bg-zinc-600 drop-shadow-md shadow-md rounded-md focus:outline">Clear</button>
+                <button className="px-4 py-1 bg-zinc-600 drop-shadow-md shadow-md rounded-md focus:outline hover:bg-zinc-900 hover:opacity-80">Clear</button>
               </div>
             </form>
           </div>

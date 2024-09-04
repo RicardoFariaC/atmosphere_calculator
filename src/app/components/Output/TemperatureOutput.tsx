@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { SelectOption } from "./Select/SelectOptions";
 import { UnitSystem } from "@/app/utils/units";
 
-const enum TemperatureUnit {
-    CELSIUS, FAHRENHEIT, RANKINE, KELVIN, THETA
+export const enum TemperatureUnit {
+    KELVIN, CELSIUS, FAHRENHEIT, RANKINE, THETA
 }
 
 interface propTypes {

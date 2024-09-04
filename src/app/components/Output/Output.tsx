@@ -35,7 +35,7 @@ export const Output = ({ label, value, unit, fixed = 5, unitSystem }: propTypes)
                 disabled
                 value={parseFloat((value / (selectValueUnit || 1)).toPrecision(fixed)) ? (value / (selectValueUnit || 1)).toPrecision(fixed) : 0}
                 id={label} 
-                className="bg-zinc-800 p-2 rounded-md basis-1/4"
+                className={`bg-zinc-800 p-2 rounded-md basis-1/4`}
             />
             <SelectOption
                 value={optionUnit}
