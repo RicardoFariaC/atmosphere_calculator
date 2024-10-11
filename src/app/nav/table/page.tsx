@@ -5,7 +5,7 @@ import NavBar from "../../components/NavBar";
 import TableCheckInput from "@/app/components/TableCheckInput/TableCheckInput";
 import { densityUnits, distanceUnits, dynamicVUnits, pressureUnits, sosUnits, UnitSystem } from "@/app/utils/units";
 import { FormEvent, use, useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import TableTemperatureCheckInput, { decideUnit } from "@/app/components/TableCheckInput/TableTemperatureCheckInput";
 import { TemperatureUnit } from "@/app/components/Output/TemperatureOutput";
 
@@ -80,7 +80,6 @@ export default function Table() {
                 unitSystem={UnitSystem.INTERNACIONAL}
                 hasCheck={false}
                 setValue={setAltitudeUnit}
-                setCheck={setPressureCheck}
               />
               <TableTemperatureCheckInput
                 unique="temperature"
