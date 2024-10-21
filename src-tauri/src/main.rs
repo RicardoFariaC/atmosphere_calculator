@@ -148,7 +148,7 @@ fn compute_graph_temperature() -> Vec<HashMap<String, f32>> {
     let temperature = calculate_temperature(geopotential_altitude, i);
 
     result_map.insert("altitude".to_string(), instant_altitude as f32);  
-    result_map.insert("temperature".to_string(), temperature);  
+    result_map.insert("value".to_string(), temperature);  
     vec.push(result_map);
 
   }
@@ -168,7 +168,7 @@ fn compute_graph_pressure() -> Vec<HashMap<String, f32>> {
     let pressure = pressure_relative * consts::PRESSURE_SL as f32;
 
     result_map.insert("altitude".to_string(), instant_altitude as f32);  
-    result_map.insert("pressure".to_string(), pressure);  
+    result_map.insert("value".to_string(), pressure);  
     vec.push(result_map);
 
   }
@@ -188,7 +188,7 @@ fn compute_graph_density() -> Vec<HashMap<String,f32>> {
     let density = consts::DENSITY_SL * pressure_relative * consts::TEMPERATURE_SL / temperature;
 
     result_map.insert("altitude".to_string(), instant_altitude as f32);  
-    result_map.insert("density".to_string(), density);  
+    result_map.insert("value".to_string(), density);  
     vec.push(result_map);
   }
 
@@ -206,7 +206,7 @@ fn compute_graph_sos() -> Vec<HashMap<String,f32>> {
     let speed_of_sound = f32::sqrt(consts::GAMMA * consts::R * temperature);
 
     result_map.insert("altitude".to_string(), instant_altitude as f32);  
-    result_map.insert("speed_of_sound".to_string(), speed_of_sound);  
+    result_map.insert("value".to_string(), speed_of_sound);  
     vec.push(result_map);
   }
 
@@ -224,7 +224,7 @@ fn compute_graph_viscosity() -> Vec<HashMap<String,f32>> {
     let dynamic_viscosity = 1.458e-6 * f32::powf(temperature, 1.5) / (temperature + 120.0);
 
     result_map.insert("altitude".to_string(), instant_altitude as f32);  
-    result_map.insert("viscosity".to_string(), dynamic_viscosity);  
+    result_map.insert("value".to_string(), dynamic_viscosity);  
     vec.push(result_map);
   }
 

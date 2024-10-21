@@ -41,11 +41,11 @@ export const Graph = ({
                 <Line type="monotone" stroke="#000" strokeWidth={2} dot={{ stroke: 'black', strokeWidth: 1 }} data={data} dataKey={lineData} />
                 <YAxis dataKey={yData} 
                 type="number" 
-                reversed domain={[0, 'dataMax + 1149']} unit={yUnit || ""} 
+                reversed domain={[0, 'dataMax']} unit={yUnit || ""} 
                 label={{value: yLabel, angle: -90, position: "left"}}
                 />
-                <XAxis dataKey={xData} type="number" domain={domain} tick tickCount={10} unit={xUnit||""} padding={{ right: 20 }} 
-                label={{value: xLabel, position: "bottom", offset: 0 }}/>
+                <XAxis dataKey={xData} type="number" domain={domain || ['dataMin', 'dataMax']} tick tickCount={5} unit={xUnit||""} padding={{ right: 20 }} 
+                label={{value: xLabel, position: "bottom", offset: 0 }} />
             </LineChart>
         </div>
     )

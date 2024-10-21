@@ -8,7 +8,7 @@ interface propTypes {
     unitSystem: UnitSystem,
     hasCheck?: boolean,
     setValue: (param: [string, number]) => void,
-    setCheck: (param: boolean) => void,
+    setCheck?: (param: boolean) => void,
 }
 
 export default function TableCheckInput({
@@ -31,7 +31,8 @@ export default function TableCheckInput({
     }
 
     useEffect(() => {
-        setCheck(isChecked);
+        if(setCheck)
+            setCheck(isChecked);
     }, [isChecked])
 
     return (

@@ -1,6 +1,6 @@
 "use client"
 
-import { invoke } from "@tauri-apps/api/tauri"
+import { invoke } from "@tauri-apps/api/core"
 import { FormEvent, useEffect, useState } from "react";
 import { AltitudeForm } from "./components/Form/AltitudeForm";
 import { InfoCard } from "./components/TextCards/InfoCard";

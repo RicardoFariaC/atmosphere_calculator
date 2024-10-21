@@ -6,7 +6,7 @@ interface propTypes {
     label: string,
     hasCheck?: boolean,
     setUnit: (param: TemperatureUnit) => void,
-    setCheck: (param: boolean) => void,
+    setCheck?: (param: boolean) => void,
     setValue: (param: string) => void,
 }
 
@@ -55,7 +55,8 @@ export default function TableTemperatureCheckInput({
     }
 
     useEffect(() => {
-        setCheck(isChecked);
+        if(setCheck)
+            setCheck(isChecked);
     }, [isChecked])
 
     useEffect(() => {
