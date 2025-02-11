@@ -40,7 +40,7 @@ export default function Home() {
               <div className="flex items-center gap-4 flex-1">
                 <label htmlFor="unit" className="basis-1/4">Unit System</label>
                 <select 
-                  name="" id="" disabled={false} className="bg-zinc-800 p-2 rounded-md w-64 basis-full"
+                  name="" id="" disabled={false} className="appearance-none bg-zinc-800 p-2 rounded-md w-64 basis-full"
                   onChange={
                     (e) => setUnitSystem(parseInt(e.target.value))
                   }
@@ -59,7 +59,7 @@ export default function Home() {
                   className="bg-zinc-800 p-2 rounded-md basis-1/2"
                   type="number"
                 />
-                <select className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4" value={altitudeUnit} onChange={(e) => setAltitudeUnit(parseFloat(e.target.value))}>
+                <select className="appearance-none bg-zinc-800 p-2 rounded-md w-64 basis-1/4" value={altitudeUnit} onChange={(e) => setAltitudeUnit(parseFloat(e.target.value))}>
                   <option value="1000">kilometers[km]</option>
                   <option value="1">meters[m]</option>
                   <option value="0.3048">feet[ft]</option>
@@ -76,7 +76,7 @@ export default function Home() {
                   />
                 <select 
                   value={velocityUnit}
-                  className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4"
+                  className="appearance-none bg-zinc-800 p-2 rounded-md w-64 basis-1/4"
                   onChange={e => setVelocityUnit(parseFloat(e.target.value))}
                 >
                   <option value="0.2777778">kilometers/hour[km/h]</option>

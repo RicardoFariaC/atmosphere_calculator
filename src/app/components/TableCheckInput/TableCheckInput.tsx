@@ -52,7 +52,7 @@ export default function TableCheckInput({
                     setValue([e.target.value, parseFloat(unit.find((unitValue) => unitValue.unit == e.target.value)?.value || "1")]);
                 }}
                 id={"tbl-"+unique}
-                className="bg-zinc-800 p-2 rounded-md basis-full"
+                className="appearance-none bg-zinc-800 p-2 rounded-md basis-full"
             >
                 {unit.map((unitValue) => {
                     return (

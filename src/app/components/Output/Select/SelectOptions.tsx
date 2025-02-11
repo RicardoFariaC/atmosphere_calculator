@@ -13,7 +13,7 @@ export const SelectOption = ({children, value, setValue}: SelectOptionPropTypes)
                 <select
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                className="bg-zinc-800 p-2 rounded-md w-64 basis-1/4"
+                className="appearance-none bg-zinc-800 p-2 rounded-md w-64 basis-1/4"
                 >
                     {children}
                 </select>

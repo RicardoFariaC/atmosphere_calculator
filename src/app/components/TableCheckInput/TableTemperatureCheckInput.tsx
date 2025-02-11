@@ -76,7 +76,7 @@ export default function TableTemperatureCheckInput({
             <label htmlFor={unique} className="basis-1/2">{label}</label>
             <select
                 id={"tbl-"+unique}
-                className="bg-zinc-800 p-2 rounded-md basis-full"
+                className="appearance-none bg-zinc-800 p-2 rounded-md basis-full"
                 value={selectUnit}
                 onChange={(e) => setSelectUnit(parseInt(e.target.value))}
             >
